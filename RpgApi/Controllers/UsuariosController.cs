@@ -7,19 +7,30 @@ using RpgApi.Data;
 using Microsoft.EntityFrameworkCore;
 using RpgApi.Models;
 using RpgApi.Utils;
+using Microsoft.Extensions.Configuration;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Security.Claims;
+using System.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace RpgApi.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class UsuariosController : ControllerBase
     {
-        private readonly DataContext _context;        
+        private readonly DataContext _context;
+        private readonly IConfiguration _configuration;
 
-        public UsuariosController(DataContext context)
+        public UsuariosController(DataContext context, IConfiguration configuration)
         {
-            _context = context;            
+            _context = context;
+            _configuration = configuration;
         }
 
         private async Task<bool> UsuarioExistente(string username)
@@ -29,6 +40,25 @@ namespace RpgApi.Controllers
                 return true;
             }
             return false;
+        }
+        private string CriarToken(Usuario usuario)
+        {
+            List<Claim> claims = new List<Claim>
+{
+            new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+            new Claim(ClaimTypes.Name, usuario.Username)
+};
+            SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("ConfiguracaoToken:Chave").Value));
+            SigningCredentials creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.Now.AddDays(1),
+                SigningCredentials = creds
+            };
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+            SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
         }
 
         [HttpPost("Registrar")]
@@ -54,6 +84,7 @@ namespace RpgApi.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpPost("Autenticar")]
         public async Task<IActionResult> AutenticarUsuario(Usuario credenciais)
         {
@@ -72,13 +103,13 @@ namespace RpgApi.Controllers
                 }
                 else
                 {
-                     usuario.DataAcesso = DateTime.Now;
+                    usuario.DataAcesso = DateTime.Now;
                     _context.TB_USUARIOS.Update(usuario);
                     await _context.SaveChangesAsync();
 
                     usuario.PasswordHash = null;//Remoção do hash/salt para não transitar no retorno da requisição.
                     usuario.PasswordSalt = null;
-
+                    usuario.Token = CriarToken(usuario);
                     return Ok(usuario);
                 }
             }
@@ -128,7 +159,7 @@ namespace RpgApi.Controllers
             }
         }
 
-                [HttpGet("{usuarioId}")]
+        [HttpGet("{usuarioId}")]
         public async Task<IActionResult> GetUsuario(int usuarioId)
         {
             try
@@ -196,11 +227,11 @@ namespace RpgApi.Controllers
                 Usuario usuario = await _context.TB_USUARIOS //Busca o usuário no banco através do Id
                    .FirstOrDefaultAsync(x => x.Id == u.Id);
 
-                usuario.Email = u.Email;                
+                usuario.Email = u.Email;
 
                 var attach = _context.Attach(usuario);
                 attach.Property(x => x.Id).IsModified = false;
-                attach.Property(x => x.Email).IsModified = true;                
+                attach.Property(x => x.Email).IsModified = true;
 
                 int linhasAfetadas = await _context.SaveChangesAsync(); //Confirma a alteração no banco
                 return Ok(linhasAfetadas); //Retorna as linhas afetadas (Geralmente sempre 1 linha msm)
@@ -217,17 +248,17 @@ namespace RpgApi.Controllers
         {
             try
             {
-                Usuario usuario = await _context.TB_USUARIOS 
+                Usuario usuario = await _context.TB_USUARIOS
                    .FirstOrDefaultAsync(x => x.Id == u.Id);
 
-                usuario.Foto = u.Foto;                
+                usuario.Foto = u.Foto;
 
                 var attach = _context.Attach(usuario);
                 attach.Property(x => x.Id).IsModified = false;
-                attach.Property(x => x.Foto).IsModified = true;                
+                attach.Property(x => x.Foto).IsModified = true;
 
-                int linhasAfetadas = await _context.SaveChangesAsync(); 
-                return Ok(linhasAfetadas); 
+                int linhasAfetadas = await _context.SaveChangesAsync();
+                return Ok(linhasAfetadas);
             }
             catch (System.Exception ex)
             {
@@ -235,7 +266,7 @@ namespace RpgApi.Controllers
             }
         }
 
-        
+
 
 
 
