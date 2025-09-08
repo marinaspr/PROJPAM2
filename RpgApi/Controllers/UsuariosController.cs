@@ -46,7 +46,8 @@ namespace RpgApi.Controllers
             List<Claim> claims = new List<Claim>
 {
             new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
-            new Claim(ClaimTypes.Name, usuario.Username)
+            new Claim(ClaimTypes.Name, usuario.Username),
+            new Claim(ClaimTypes.Role, usuario.Perfil)
 };
             SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("ConfiguracaoToken:Chave").Value));
             SigningCredentials creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
