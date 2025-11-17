@@ -1,12 +1,6 @@
-﻿using AndroidX.CoordinatorLayout.Widget;
-using AppRpgEtec.Models;
+﻿using AppRpgEtec.Models;
 using AppRpgEtec.Services.Usuarios;
-using AppRpgEtec.Views.Personagens;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using AppRpgEtec.Views.Disputas;
 using System.Windows.Input;
 
 namespace AppRpgEtec.ViewModels.Usuarios
@@ -84,22 +78,20 @@ namespace AppRpgEtec.ViewModels.Usuarios
                     GeolocationRequest request =
                         new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(10));
 
-                    Location location await Geolocation
-                        .Default.GetLocationAsync(request, _cancel TokenSource.Token);
+                    Location location = await Geolocation.Default.GetLocationAsync(request, _cancelTokenSource.Token);
 
                     Usuario uloc = new Usuario();
-                    uLoc.IduAutenticado.Id;
-                    uLoc.Latitude = location.Latitude;
-                    uLoc.Longitude = location.Longitude;
+                    uloc.Id = uAutenticado.Id;
+                    uloc.Latitude = location.Latitude;
+                    uloc.Longitude = location.Longitude;
 
                     UsuarioService uServiceLoc = new UsuarioService(uAutenticado.Token);
-                    await uServiceLoc.PutAtualizarLocalizacaoAsync(uLoc);
+                    await uServiceLoc.PutAtualizarLocalizacaoAsync(uloc);
                     //Fim da coleta de Geolocalização atual para Atualização na API
 
-                    await Application.Current.MainPage
-                        .DisplayAlert("Informação", mensagem, "Ok");
+                    await Application.Current.MainPage.DisplayAlert("Informação", mensagem, "Ok");
 
-                    Application.Current.MainPage = new AppShell();
+                    Application.Current.MainPage = new ListagemView();
                 }
                 else
                 {

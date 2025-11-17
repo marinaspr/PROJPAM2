@@ -25,7 +25,7 @@ namespace AppRpgEtec.ViewModels.Personagens
             pService = new PersonagemService(token);
 
             _ = ObterClasses();
-            SalvarCommand = new Command(async () => { await SalvarPersonagem(); });
+            SalvarCommand = new Command(async () => { await SalvarPersonagem(); }, () => ValidarCampos());
             CancelarCommand = new Command(async => CancelarCadastro());
         }
 
@@ -50,7 +50,7 @@ namespace AppRpgEtec.ViewModels.Personagens
             set
             {
                 id = value;
-                OnPropertyChanged(nameof(Id));//Informa mundaça de estado para a View para ViewModel ou vice-versa de acordo com a herança da BaseViewModel
+                OnPropertyChanged(nameof(Id));
             }
         }
 
@@ -60,7 +60,8 @@ namespace AppRpgEtec.ViewModels.Personagens
             set
             {
                 nome = value;
-                OnPropertyChanged(nameof(Nome));
+                OnPropertyChanged();
+                ((Command)SalvarCommand).ChangeCanExecute();
             }
         }
 
@@ -71,6 +72,7 @@ namespace AppRpgEtec.ViewModels.Personagens
             {
                 pontosVida = value;
                 OnPropertyChanged(nameof(PontosVida));
+                ((Command)SalvarCommand).ChangeCanExecute();
             }
         }
 
@@ -80,7 +82,8 @@ namespace AppRpgEtec.ViewModels.Personagens
             set
             {
                 forca = value;
-                OnPropertyChanged(nameof(Forca));
+                OnPropertyChanged();
+                ((Command)SalvarCommand).ChangeCanExecute();
             }
         }
 
@@ -90,7 +93,8 @@ namespace AppRpgEtec.ViewModels.Personagens
             set
             {
                 defesa = value;
-                OnPropertyChanged(nameof(Defesa));
+                OnPropertyChanged();
+                ((Command)SalvarCommand).ChangeCanExecute();
             }
         }
 
@@ -250,6 +254,32 @@ namespace AppRpgEtec.ViewModels.Personagens
                 }
             }
         }
+        public bool CadastroHabilitado
+        {
+            get
+            {
+                return (PontosVida > 0);
+            }
+        }
+        public int PontosVida
+        {
+            get => pontosVida;
+            set 
+                { 
+                pontosVida = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CadastroHabilitado));
+            }
+        }
+        public bool ValidarCampos()
+        {
+            return !string.IsNullOrEmpty(Nome)
+                && CadastroHabilitado
+                && Forca != 0
+                && Defesa != 0;
+        }
+
+        
 
 
 
